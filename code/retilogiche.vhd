@@ -28,10 +28,11 @@ end project_reti_logiche;
 architecture Behavioral of project_reti_logiche is
     type state_type is (INIT,RESET,START,READ_N_COL,CALCULATE_WRITE_ADDR,
                         COMPARE_MAX_MIN, CALCULATE_SHIFT_LEVEL,
-                        CALCULATE_NEW_PIXEL_VALUE,WRITE_NEW_PIXEL_VALUE,DONE);
+                        CALCULATE_NEW_PIXEL_VALUE,WRITE_NEW_PIXEL_VALUE,DISABLE_WRITING,DONE);
     signal next_state : state_type:=INIT;
     signal curr_state : state_type:=INIT;
     signal curr_addr: UNSIGNED(15 downto 0):="0000000000000000";
+    signal counter: UNSIGNED(15 downto 0):="0000000000000000";
     signal write_addr: UNSIGNED(15 downto 0):="0000000000000000";
     signal n_col: UNSIGNED(7 downto 0):="00000000";
     signal max_pixel_value: std_logic_vector(7 downto 0):="00000000";
@@ -53,7 +54,7 @@ begin
         end if;  
     end process;
           
-   lambda:process(curr_state,i_clk,i_start)
+  lambda:process(curr_state,i_clk,i_start,i_rst)
   begin
       if falling_edge(i_clk) then
          case curr_state is 
@@ -66,19 +67,26 @@ begin
              when READ_N_COL =>
                 next_state<= CALCULATE_WRITE_ADDR;    
              when CALCULATE_WRITE_ADDR =>
+                 counter <= "0000000000000001";
                  next_state<= COMPARE_MAX_MIN;  
              when COMPARE_MAX_MIN =>
-                    if ( curr_addr >= write_addr ) then
+                    counter<= counter +1; 
+                    if ( counter >= write_addr) then
                         next_state<= CALCULATE_SHIFT_LEVEL;
-                    end if;    
+                    end if;
+                       
              when CALCULATE_SHIFT_LEVEL =>
+                    counter <= "0000000000000001";
                     next_state<= CALCULATE_NEW_PIXEL_VALUE;
              when CALCULATE_NEW_PIXEL_VALUE =>
-                    next_state<= WRITE_NEW_PIXEL_VALUE;
-             when WRITE_NEW_PIXEL_VALUE =>
-                    if ( curr_addr < write_addr + 1 ) then
+                    next_state<=WRITE_NEW_PIXEL_VALUE ;
+             when WRITE_NEW_PIXEL_VALUE   =>
+                    next_state<= DISABLE_WRITING ;       
+             when DISABLE_WRITING =>
+                    counter<= counter +1; 
+                    if ( counter < write_addr ) then
                         next_state<= CALCULATE_NEW_PIXEL_VALUE;
-                    elsif (curr_addr = write_addr + 1) then 
+                    elsif (counter = write_addr ) then 
                         next_state<= DONE;
                     end if;
              when others => next_state <= RESET;
@@ -88,7 +96,7 @@ begin
     end process;
                        
            
-    delta:process(curr_state,i_clk,i_start)     
+    delta:process(curr_state,i_clk,i_start,i_rst)     
     begin
         if falling_edge(i_clk) then
             case curr_state is
@@ -112,7 +120,7 @@ begin
                     curr_addr <= curr_addr + 1;
                     
                 when CALCULATE_WRITE_ADDR =>
-                    write_addr <= 2 + (UNSIGNED(i_data) * n_col);
+                    write_addr <=(UNSIGNED(i_data) * n_col);
                     curr_addr <= curr_addr + 1; 
                     
                 when COMPARE_MAX_MIN =>
@@ -122,13 +130,9 @@ begin
                     if ( i_data > max_pixel_value ) then
                         max_pixel_value <= i_data;
                         end if;
-                    curr_addr <= curr_addr + 1;
-                    if ( curr_addr = write_addr ) then 
-                        write_addr <= write_addr - 2; 
-                        end if;
-                    curr_addr <= curr_addr - write_addr; --riporto curr_addr al primo pixel;    
-                         
-               when CALCULATE_SHIFT_LEVEL =>
+                    curr_addr <= curr_addr + 1;                          
+               when CALCULATE_SHIFT_LEVEL =>                  
+                    curr_addr <= curr_addr - write_addr; --riporto curr_addr al primo pixel;
                     delta_value<= std_logic_vector(UNSIGNED(max_pixel_value)- UNSIGNED(min_pixel_value));
                     if(delta_value = "11111111")then
                         shift_level<="0000";
@@ -160,10 +164,10 @@ begin
                     curr_addr <= curr_addr + write_addr;
                     
                when WRITE_NEW_PIXEL_VALUE=>
-                    
-                    o_we <= '1';
+                    o_we<= '1';    
                     o_data<=std_logic_vector(new_pixel_value);
-                    o_we <='0';
+               when DISABLE_WRITING =>              
+                    o_we <= '0';
                     curr_addr <= curr_addr - write_addr + 1;
                     
                     
