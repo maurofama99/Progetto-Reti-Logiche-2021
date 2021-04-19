@@ -1,6 +1,6 @@
 
 ----------------------------------------------------------------------------------
--- Students: Mauro Famà
+-- Students: Mauro Famï¿½
 --           Elia Fantini
 -- 
 -- Module Name: project_reti_logiche - Behavioral
@@ -130,10 +130,10 @@ begin
                     if ( i_data > max_pixel_value ) then
                         max_pixel_value <= i_data;
                         end if;
+                    delta_value<= std_logic_vector(UNSIGNED(max_pixel_value)- UNSIGNED(min_pixel_value));
                     curr_addr <= curr_addr + 1;                          
                when CALCULATE_SHIFT_LEVEL =>                  
-                    curr_addr <= curr_addr - write_addr; --riporto curr_addr al primo pixel;
-                    delta_value<= std_logic_vector(UNSIGNED(max_pixel_value)- UNSIGNED(min_pixel_value));
+                    curr_addr <= curr_addr - write_addr; --riporto curr_addr al primo pixel
                     if(delta_value = "11111111")then
                         shift_level<="0000";
                     elsif ((delta_value = "1-------") )OR(delta_value  = "01111111")then
