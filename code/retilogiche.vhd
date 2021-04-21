@@ -1,6 +1,6 @@
 
 ----------------------------------------------------------------------------------
--- Students: Mauro Fam�
+-- Students: Mauro Fam?
 --           Elia Fantini
 -- 
 -- Module Name: project_reti_logiche - Behavioral
@@ -27,8 +27,8 @@ end project_reti_logiche;
 
 architecture Behavioral of project_reti_logiche is
     type state_type is (INIT,RESET,START,READ_N_COL,CALCULATE_WRITE_ADDR,
-                        COMPARE_MAX_MIN, CALCULATE_SHIFT_LEVEL,
-                        CALCULATE_NEW_PIXEL_VALUE,WRITE_NEW_PIXEL_VALUE,DISABLE_WRITING,DONE);
+                        COMPARE_MAX_MIN, CALCULATE_DELTA_VALUE, CALCULATE_SHIFT_LEVEL,
+                        CALCULATE_NEW_PIXEL_VALUE,CHECK_NEW_PIXEL_VALUE,WRITE_NEW_PIXEL_VALUE,DISABLE_WRITING,DONE);
     signal next_state : state_type:=INIT;
     signal curr_state : state_type:=INIT;
     signal curr_addr: UNSIGNED(15 downto 0):="0000000000000000";
@@ -39,7 +39,7 @@ architecture Behavioral of project_reti_logiche is
     signal min_pixel_value: std_logic_vector(7 downto 0):="11111111";
     signal delta_value: std_logic_vector(7 downto 0):="11111111";
     signal shift_level: std_logic_vector (3 downto 0):="0000";
-    signal new_pixel_value: UNSIGNED (7 downto 0):="00000000";
+    signal new_pixel_value: UNSIGNED (15 downto 0):="0000000000000000";
     
 begin
 
@@ -72,14 +72,17 @@ begin
              when COMPARE_MAX_MIN =>
                     counter<= counter +1; 
                     if ( counter >= write_addr) then
-                        next_state<= CALCULATE_SHIFT_LEVEL;
+                        next_state<= CALCULATE_DELTA_VALUE;
                     end if;
-                       
+             when CALCULATE_DELTA_VALUE =>
+                    next_state<= CALCULATE_SHIFT_LEVEL; 
              when CALCULATE_SHIFT_LEVEL =>
                     counter <= "0000000000000001";
                     next_state<= CALCULATE_NEW_PIXEL_VALUE;
              when CALCULATE_NEW_PIXEL_VALUE =>
-                    next_state<=WRITE_NEW_PIXEL_VALUE ;
+                    next_state<=CHECK_NEW_PIXEL_VALUE ;
+             when CHECK_NEW_PIXEL_VALUE =>   
+                next_state<=WRITE_NEW_PIXEL_VALUE ;    
              when WRITE_NEW_PIXEL_VALUE   =>
                     next_state<= DISABLE_WRITING ;       
              when DISABLE_WRITING =>
@@ -108,7 +111,7 @@ begin
                     max_pixel_value <= "00000000";
                     min_pixel_value <= "11111111";
                     shift_level <= "0000";
-                    new_pixel_value <= "00000000";  
+                    new_pixel_value <= "0000000000000000";  
                     delta_value<="11111111";
                     o_done <= '0';
                     
@@ -129,43 +132,65 @@ begin
                         end if;
                     if ( i_data > max_pixel_value ) then
                         max_pixel_value <= i_data;
-                        end if;
-                    delta_value<= std_logic_vector(UNSIGNED(max_pixel_value)- UNSIGNED(min_pixel_value));
-                    curr_addr <= curr_addr + 1;                          
+                        end if;                  
+                    curr_addr <= curr_addr + 1;  
+                    
+               when CALCULATE_DELTA_VALUE =>  
+                    delta_value<= std_logic_vector(UNSIGNED(max_pixel_value)- UNSIGNED(min_pixel_value));    
+                                              
                when CALCULATE_SHIFT_LEVEL =>                  
                     curr_addr <= curr_addr - write_addr; --riporto curr_addr al primo pixel
-                    if(delta_value = "11111111")then
+                    if(delta_value = "11111111") then
                         shift_level<="0000";
-                    elsif ((delta_value = "1-------") )OR(delta_value  = "01111111")then
-                        shift_level<="0001";
-                    elsif ((delta_value = "01------") OR(delta_value  = "00111111"))then
-                        shift_level<="0010";
-                    elsif ((delta_value = "001-----")OR(delta_value = "00011111"))then
-                        shift_level<="0011";    
-                    elsif ((delta_value = "0001----") OR(delta_value = "00001111"))then
-                        shift_level<="0100";    
-                    elsif ((delta_value = "00001---") OR(delta_value  = "00000111"))then
-                        shift_level<="0101";     
-                    elsif ((delta_value = "000001--") OR(delta_value  = "00000011"))then
-                        shift_level<="0110";    
-                    elsif ((delta_value = "0000001-") OR(delta_value  = "00000001"))then
-                        shift_level<="0111";    
-                    elsif (delta_value  = "00000000") then
-                        shift_level<="1000";
-                    else  shift_level<="----";
-                    end if; 
+                    else
+                        if ((delta_value(7)= '1') OR(delta_value  = "01111111")) then
+                            shift_level<="0001";
+                        else 
+                            if((delta_value(7)= '0'AND delta_value(6)= '1' ) OR(delta_value  = "00111111")) then
+                                shift_level<="0010";
+                            else 
+                                if((delta_value(7)= '0'AND delta_value(6)= '0'AND delta_value(5)= '1')OR(delta_value = "00011111"))then
+                                    shift_level<="0011";    
+                                else
+                                    if ((delta_value(7)= '0'AND delta_value(6)= '0'AND delta_value(5)= '0'AND delta_value(4)= '1')OR(delta_value = "00011111") OR(delta_value = "00001111"))then
+                                        shift_level<="0100";    
+                                    else 
+                                        if((delta_value(7)= '0'AND delta_value(6)= '0'AND delta_value(5)= '0'AND delta_value(4)= '0' AND delta_value(3)= '1') OR(delta_value  = "00000111"))then
+                                            shift_level<="0101";     
+                                        else 
+                                            if((delta_value(7)= '0'AND delta_value(6)= '0'AND delta_value(5)= '0'AND delta_value(4)= '0' AND delta_value(3)= '0'AND delta_value(2)= '1') OR(delta_value  = "00000011"))then
+                                                shift_level<="0110";    
+                                            else 
+                                                if((delta_value(7)= '0'AND delta_value(6)= '0'AND delta_value(5)= '0'AND delta_value(4)= '0' AND delta_value(3)= '0'AND delta_value(2)= '0'AND delta_value(1)= '1') OR(delta_value  = "00000001"))then
+                                                    shift_level<="0111";    
+                                                else 
+                                                    if(delta_value  = "00000000") then
+                                                        shift_level<="1000";
+                                                    else  shift_level<="----";
+                                                    end if; 
+                                                end if;
+                                            end if;
+                                        end if;
+                                    end if;
+                               end if;
+                           end if;
+                       end if;
+                    end if;
+                                      
                                    
                when CALCULATE_NEW_PIXEL_VALUE =>
 
-                    new_pixel_value<= shift_left(UNSIGNED(UNSIGNED(i_data)- UNSIGNED(min_pixel_value)),  to_integer(UNSIGNED(shift_level)));
-                    if( new_pixel_value > "11111111" ) then
-                        new_pixel_value<= "11111111";
-                    end if;
+                    new_pixel_value<= shift_left(resize(UNSIGNED(UNSIGNED(i_data)- UNSIGNED(min_pixel_value)),16),  to_integer(UNSIGNED(shift_level)));                    
                     curr_addr <= curr_addr + write_addr;
+               
+               when  CHECK_NEW_PIXEL_VALUE =>
+                    if( new_pixel_value > "0000000011111111" ) then
+                        new_pixel_value<= "0000000011111111";
+                    end if;   
                     
                when WRITE_NEW_PIXEL_VALUE=>
                     o_we<= '1';    
-                    o_data<=std_logic_vector(new_pixel_value);
+                    o_data<=std_logic_vector(new_pixel_value(7 downto 0));
                when DISABLE_WRITING =>              
                     o_we <= '0';
                     curr_addr <= curr_addr - write_addr + 1;
