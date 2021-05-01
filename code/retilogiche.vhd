@@ -1,10 +1,9 @@
 
 ----------------------------------------------------------------------------------
--- Students: Mauro Fam?
---           Elia Fantini
+-- Students: Mauro Fama', CP: 10631287
+--           Elia Fantini, CP: 
 -- 
--- Module Name: project_reti_logiche - Behavioral
-
+-- Module Name: project_reti_logiche 
 ----------------------------------------------------------------------------------
 
 
@@ -34,6 +33,7 @@ architecture Behavioral of project_reti_logiche is
     signal curr_addr: UNSIGNED(15 downto 0):="0000000000000000";
     signal counter: UNSIGNED(15 downto 0):="0000000000000000";
     signal write_addr: UNSIGNED(15 downto 0):="0000000000000000";
+    signal tmp: UNSIGNED(15 downto 0):="0000000000000000";
     signal n_col: UNSIGNED(7 downto 0):="00000000";
     signal max_pixel_value: std_logic_vector(7 downto 0):="00000000";
     signal min_pixel_value: std_logic_vector(7 downto 0):="11111111";
@@ -70,7 +70,7 @@ begin
                  counter <= "0000000000000001";
                  next_state<= COMPARE_MAX_MIN;  
              when COMPARE_MAX_MIN =>
-                    counter<= counter +1; 
+                    counter<= counter +1;                               
                     if ( counter >= write_addr) then
                         next_state<= CALCULATE_DELTA_VALUE;
                     end if;
@@ -81,16 +81,20 @@ begin
                     next_state<= CALCULATE_NEW_PIXEL_VALUE;
              when CALCULATE_NEW_PIXEL_VALUE =>
                     next_state<=CHECK_NEW_PIXEL_VALUE ;
-             when CHECK_NEW_PIXEL_VALUE =>   
-                next_state<=WRITE_NEW_PIXEL_VALUE ;    
+             when CHECK_NEW_PIXEL_VALUE =>    
+                    next_state<=WRITE_NEW_PIXEL_VALUE ;    
              when WRITE_NEW_PIXEL_VALUE   =>
                     next_state<= DISABLE_WRITING ;       
              when DISABLE_WRITING =>
-                    counter<= counter +1; 
+                    counter<= counter +1;                               
                     if ( counter < write_addr ) then
                         next_state<= CALCULATE_NEW_PIXEL_VALUE;
                     elsif (counter = write_addr ) then 
                         next_state<= DONE;
+                    end if;
+             when DONE =>
+                    if i_start = '0' then
+                        next_state <= RESET;
                     end if;
              when others => next_state <= RESET;
              
@@ -117,14 +121,14 @@ begin
                     
                 when START =>
                     o_en <= '1';
-                    
+                                        
                 when READ_N_COL =>
                     n_col <= UNSIGNED(i_data);
                     curr_addr <= curr_addr + 1;
-                    
+                                                        
                 when CALCULATE_WRITE_ADDR =>
-                    write_addr <=(UNSIGNED(i_data) * n_col);
-                    curr_addr <= curr_addr + 1; 
+                    write_addr <= (UNSIGNED(i_data) * n_col); 
+                    curr_addr <= curr_addr + 1;
                     
                 when COMPARE_MAX_MIN =>
                     if ( i_data < min_pixel_value ) then
@@ -133,7 +137,7 @@ begin
                     if ( i_data > max_pixel_value ) then
                         max_pixel_value <= i_data;
                         end if;                  
-                    curr_addr <= curr_addr + 1;  
+                    curr_addr <= curr_addr + 1;
                     
                when CALCULATE_DELTA_VALUE =>  
                     delta_value<= std_logic_vector(UNSIGNED(max_pixel_value)- UNSIGNED(min_pixel_value));    
@@ -152,7 +156,7 @@ begin
                                 if((delta_value(7)= '0'AND delta_value(6)= '0'AND delta_value(5)= '1')OR(delta_value = "00011111"))then
                                     shift_level<="0011";    
                                 else
-                                    if ((delta_value(7)= '0'AND delta_value(6)= '0'AND delta_value(5)= '0'AND delta_value(4)= '1')OR(delta_value = "00011111") OR(delta_value = "00001111"))then
+                                    if ((delta_value(7)= '0'AND delta_value(6)= '0'AND delta_value(5)= '0'AND delta_value(4)= '1') OR(delta_value = "00001111"))then
                                         shift_level<="0100";    
                                     else 
                                         if((delta_value(7)= '0'AND delta_value(6)= '0'AND delta_value(5)= '0'AND delta_value(4)= '0' AND delta_value(3)= '1') OR(delta_value  = "00000111"))then
@@ -195,13 +199,12 @@ begin
                     o_we <= '0';
                     curr_addr <= curr_addr - write_addr + 1;
                     
-                    
                when DONE =>
                     o_en <= '0';
                     o_done <='1';
               
                when others =>
-                   o_en <= '1';
+                    o_en <= '1';
                
                end case;
            end if;
