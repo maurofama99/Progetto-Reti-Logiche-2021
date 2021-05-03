@@ -33,7 +33,6 @@ architecture Behavioral of project_reti_logiche is
     signal curr_addr: UNSIGNED(15 downto 0):="0000000000000000";
     signal counter: UNSIGNED(15 downto 0):="0000000000000000";
     signal write_addr: UNSIGNED(15 downto 0):="0000000000000000";
-    signal tmp: UNSIGNED(15 downto 0):="0000000000000000";
     signal n_col: UNSIGNED(7 downto 0):="00000000";
     signal max_pixel_value: std_logic_vector(7 downto 0):="00000000";
     signal min_pixel_value: std_logic_vector(7 downto 0):="11111111";
@@ -45,30 +44,30 @@ begin
 
     o_address <= std_logic_vector(curr_addr);
 
-    state_reg:process(i_clk,i_rst)
-    begin
-        if(i_rst= '1') then
+  state_reg:process(i_clk,i_rst)
+  begin
+      if(i_rst= '1') then
             curr_state<= RESET;
-        elsif rising_edge(i_clk)then
+      elsif rising_edge(i_clk)then
             curr_state<= next_state;
-        end if;  
-    end process;
+      end if;  
+  end process;
           
   lambda:process(curr_state,i_clk,i_start,i_rst)
   begin
       if falling_edge(i_clk) then
          case curr_state is 
-            when RESET =>
-                if i_start = '1' then
-                   next_state<= START;
-               end if;
+             when RESET =>
+                    if i_start = '1' then
+                        next_state<= START;
+                    end if;
              when START =>
-                  next_state <= READ_N_COL;
+                    next_state <= READ_N_COL;
              when READ_N_COL =>
-                next_state<= CALCULATE_WRITE_ADDR;    
+                    next_state<= CALCULATE_WRITE_ADDR;    
              when CALCULATE_WRITE_ADDR =>
-                 counter <= "0000000000000001";
-                 next_state<= COMPARE_MAX_MIN;  
+                    counter <= "0000000000000001";
+                    next_state<= COMPARE_MAX_MIN;  
              when COMPARE_MAX_MIN =>
                     counter<= counter +1;                               
                     if ( counter >= write_addr) then
@@ -98,9 +97,9 @@ begin
                     end if;
              when others => next_state <= RESET;
              
-            end case;
-        end if;
-    end process;
+             end case;
+      end if;
+  end process;
                        
            
     delta:process(curr_state,i_clk,i_start,i_rst)     
@@ -183,7 +182,6 @@ begin
                                       
                                    
                when CALCULATE_NEW_PIXEL_VALUE =>
-
                     new_pixel_value<= shift_left(resize(UNSIGNED(UNSIGNED(i_data)- UNSIGNED(min_pixel_value)),16),  to_integer(UNSIGNED(shift_level)));                    
                     curr_addr <= curr_addr + write_addr;
                
@@ -195,6 +193,7 @@ begin
                when WRITE_NEW_PIXEL_VALUE=>
                     o_we<= '1';    
                     o_data<=std_logic_vector(new_pixel_value(7 downto 0));
+                    
                when DISABLE_WRITING =>              
                     o_we <= '0';
                     curr_addr <= curr_addr - write_addr + 1;
