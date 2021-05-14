@@ -7,7 +7,7 @@ Lo scopo della prova è quello di applicare le tecniche di progettazione di circ
 
 Contenuti
 ---------
-* Nella cartella **code** è presente il codice scritto in linguaggio VHDL del modulo implementato.
+* Nella cartella **code** è presente il codice scritto in linguaggio VHDL del modulo implementato e due Test Bench.
 * Nella cartella **doc** è presente la documentazione del progetto.
 * Nella cartella **spec** sono presenti le specifiche e le regole di progetto fornite dai docenti.
 
