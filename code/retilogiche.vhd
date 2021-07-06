@@ -2,8 +2,8 @@
 ----------------------------------------------------------------------------------
 -- Progetto svolto in gruppo dagli studenti:
 --
--- Students: Mauro Fama', CP: 10631287, Mat: 908861
---           Elia Fantini, CP: 10651951, Mat. 907960
+-- Students: Mauro Fama'
+--           Elia Fantini
 --
 -- Module Name: project_reti_logiche 
 ----------------------------------------------------------------------------------
